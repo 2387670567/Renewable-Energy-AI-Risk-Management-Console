@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renewable Energy AI Risk Management Console</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 React 和 ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- 引入 Babel 使得浏览器可以实时编译 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 图标组件：替代原有的 lucide-react 库，确保单文件也能正常显示图标
+        const Icon = ({ name, className }) => {
+            const icons = {
+                Activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>,
+                MapPin: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></>,
+                CloudRain: <><line x1="16" y1="13" x2="16" y2="21"></line><line x1="8" y1="13" x2="8" y2="21"></line><line x1="12" y1="15" x2="12" y2="23"></line><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></>,
+                Wind: <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>,
+                ShieldAlert: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></>,
+                Layers: <><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></>,
+                Cpu: <><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></>,
+                Thermometer: <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>,
+                Zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        function App() {
+            // --- GeoAI State ---
+            const [precipitation, setPrecipitation] = useState(52); // mm/h
+            const [windSpeed, setWindSpeed] = useState(26); // m/s
+            const [hailDiameter, setHailDiameter] = useState(2.5); // cm
+            
+            // Vulnerability Calculation Constants
+            const alpha = 0.12;
+            const beta = 3.0;
+            
+            // Calculate P_fail
+            const pFail = 1 - Math.exp(-alpha * Math.pow(hailDiameter, beta));
+            
+            // Check High-Risk Corridor Conditions
+            const isHighRisk = precipitation > 50 && windSpeed > 25;
+
+            // --- PINN State ---
+            const [bessTemp, setBessTemp] = useState(65.4);
+            const [bessVoltage, setBessVoltage] = useState(850);
+            const [coolingActive, setCoolingActive] = useState(false);
+
+            // Simulate real-time sensor fluctuations
+            useEffect(() => {
+                const interval = setInterval(() => {
+                if (!coolingActive) {
+                    setBessTemp(prev => Math.min(prev + (Math.random() * 0.5), 120));
+                } else {
+                    setBessTemp(prev => Math.max(prev - (Math.random() * 1.5), 45));
+                }
+                setBessVoltage(prev => 850 + (Math.random() * 20 - 10));
+                }, 1000);
+                return () => clearInterval(interval);
+            }, [coolingActive]);
+
+            // Calculate time to thermal runaway (simplified projection)
+            const timeToRunaway = Math.max(0, 15 - (bessTemp - 60) * 0.2).toFixed(1);
+
+            return (
+                <div className="min-h-screen p-6 font-sans text-slate-900">
+                
+                {/* Header */}
+                <header className="mb-8 border-b-4 border-slate-800 pb-4 flex justify-between items-end">
+                    <div>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                        Renewable Energy AI Risk Management Console
+                    </h1>
+                    <p className="text-xl font-bold text-slate-600 mt-2">
+                        Multi-Scale Geospatial & Physics-Informed Analytics
+                    </p>
+                    </div>
+                    <div className="flex items-center space-x-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-300">
+                    <Icon name="Activity" className="text-green-600 w-8 h-8" />
+                    <span className="text-lg font-bold text-green-700">System Online</span>
+                    </div>
+                </header>
+
+                {/* Main Grid Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    {/* ---------------------------------------------------------------- */}
+                    {/* Module 1: GeoAI Multi-Scale Risk Quantification                  */}
+                    {/* ---------------------------------------------------------------- */}
+                    <section className="bg-white rounded-xl shadow-lg border-t-8 border-teal-600 p-6 flex flex-col h-full">
+                    <div className="flex items-center mb-6">
+                        <Icon name="MapPin" className="text-teal-600 w-8 h-8 mr-3" />
+                        <h2 className="text-2xl font-bold text-slate-800">Geospatial AI (GeoAI)</h2>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-slate-700 mb-4 bg-slate-100 p-2 rounded">
+                        Macro-Risk Mapping & Telemetry
+                    </h3>
+                    
+                    <div className="space-y-6 flex-grow">
+                        {/* Precipitation Slider */}
+                        <div>
+                        <div className="flex justify-between font-bold text-lg mb-1">
+                            <span className="flex items-center"><Icon name="CloudRain" className="w-5 h-5 mr-2 text-blue-600"/> Radar Precipitation</span>
+                            <span className={precipitation > 50 ? "text-red-600" : "text-slate-800"}>{precipitation} mm/h</span>
+                        </div>
+                        <input type="range" min="0" max="100" value={precipitation} onChange={(e) => setPrecipitation(e.target.value)} className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600" />
+                        </div>
+
+                        {/* Wind Speed Slider */}
+                        <div>
+                        <div className="flex justify-between font-bold text-lg mb-1">
+                            <span className="flex items-center"><Icon name="Wind" className="w-5 h-5 mr-2 text-blue-600"/> Real-time Wind Speed</span>
+                            <span className={windSpeed > 25 ? "text-red-600" : "text-slate-800"}>{windSpeed} m/s</span>
+                        </div>
+                        <input type="range" min="0" max="50" value={windSpeed} onChange={(e) => setWindSpeed(e.target.value)} className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600" />
+                        </div>
+
+                        {/* High Risk Alert */}
+                        {isHighRisk && (
+                        <div className="bg-red-100 border-l-4 border-red-600 p-4 rounded animate-pulse">
+                            <p className="text-red-800 font-bold text-lg flex items-center">
+                            <Icon name="ShieldAlert" className="w-6 h-6 mr-2" />
+                            High-Risk Corridor Identified
+                            </p>
+                            <p className="text-red-700 font-semibold mt-1">Compound Hazards: Flood & Strong Winds</p>
+                            <button className="mt-3 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow">
+                            Trigger Predictive Intervention (Pumps & Shut-down)
+                            </button>
+                        </div>
+                        )}
+
+                        <hr className="border-slate-300" />
+
+                        {/* Device-Level Vulnerability */}
+                        <h3 className="text-lg font-bold text-slate-700 bg-slate-100 p-2 rounded">
+                        Device-Level Vulnerability (PV Panels)
+                        </h3>
+                        
+                        <div>
+                        <div className="flex justify-between font-bold text-lg mb-1">
+                            <span>Hail Diameter (d)</span>
+                            <span>{hailDiameter} cm</span>
+                        </div>
+                        <input type="range" min="0" max="4" step="0.1" value={hailDiameter} onChange={(e) => setHailDiameter(e.target.value)} className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600" />
+                        </div>
+
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p className="font-mono font-bold text-lg text-slate-800 text-center mb-2">
+                            P_fail = 1 - exp(-α × d^β)
+                        </p>
+                        <div className="flex justify-between items-center">
+                            <span className="font-bold text-lg">PV Failure Probability:</span>
+                            <span className={`text-2xl font-extrabold ${(pFail * 100) > 50 ? 'text-red-600' : 'text-orange-500'}`}>
+                            {(pFail * 100).toFixed(1)}%
+                            </span>
+                        </div>
+                        </div>
+                    </div>
+                    </section>
+
+                    {/* ---------------------------------------------------------------- */}
+                    {/* Module 2: Explainable AI (XAI) in Environmental Toxicology       */}
+                    {/* ---------------------------------------------------------------- */}
+                    <section className="bg-white rounded-xl shadow-lg border-t-8 border-indigo-600 p-6 flex flex-col h-full">
+                    <div className="flex items-center mb-6">
+                        <Icon name="Layers" className="text-indigo-600 w-8 h-8 mr-3" />
+                        <h2 className="text-2xl font-bold text-slate-800">Explainable AI (XAI)</h2>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-slate-700 mb-4 bg-slate-100 p-2 rounded">
+                        Complex Environmental Toxicology
+                    </h3>
+                    <p className="font-semibold text-slate-600 text-lg mb-6 leading-relaxed">
+                        Post-failure Pb/Cd leaching analysis. Identifying non-linear multiphase drivers using game-theory based <span className="text-indigo-700 font-bold">Shapley Additive Explanations (SHAP)</span>.
+                    </p>
+
+                    <div className="space-y-6 flex-grow">
+                        <h4 className="font-bold text-xl text-slate-800 border-b-2 border-slate-200 pb-2">
+                        Feature Importance (SHAP Values)
+                        </h4>
+                        
+                        {/* SHAP Bar 1 */}
+                        <div>
+                        <div className="flex justify-between font-bold text-lg mb-1">
+                            <span>Soluble Chloride (S-Cl)</span>
+                            <span className="text-indigo-700">0.42</span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-5">
+                            <div className="bg-indigo-600 h-5 rounded-full" style={{ width: '42%' }}></div>
+                        </div>
+                        </div>
+
+                        {/* SHAP Bar 2 */}
+                        <div>
+                        <div className="flex justify-between font-bold text-lg mb-1">
+                            <span>System pH Level</span>
+                            <span className="text-indigo-500">0.28</span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-5">
+                            <div className="bg-indigo-400 h-5 rounded-full" style={{ width: '28%' }}></div>
+                        </div>
+                        </div>
+
+                        {/* SHAP Bar 3 */}
+                        <div>
+                        <div className="flex justify-between font-bold text-lg mb-1 text-slate-500">
+                            <span>Microbiome Composition</span>
+                            <span>0.15</span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-5">
+                            <div className="bg-slate-400 h-5 rounded-full" style={{ width: '15%' }}></div>
+                        </div>
+                        </div>
+
+                        <div className="mt-8 bg-indigo-50 border-l-4 border-indigo-600 p-4 rounded">
+                        <h4 className="font-bold text-indigo-900 text-lg mb-1">Transformative Insight</h4>
+                        <p className="font-bold text-indigo-800">
+                            S-Cl outweighs traditional pH assumptions. Remediation strategy shifted to chloride mitigation.
+                        </p>
+                        </div>
+                    </div>
+                    </section>
+
+                    {/* ---------------------------------------------------------------- */}
+                    {/* Module 3: PINNs for BESS Thermal Management                      */}
+                    {/* ---------------------------------------------------------------- */}
+                    <section className="bg-white rounded-xl shadow-lg border-t-8 border-rose-600 p-6 flex flex-col h-full">
+                    <div className="flex items-center mb-6">
+                        <Icon name="Cpu" className="text-rose-600 w-8 h-8 mr-3" />
+                        <h2 className="text-2xl font-bold text-slate-800">Physics-Informed NNs</h2>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-slate-700 mb-4 bg-slate-100 p-2 rounded">
+                        BESS Thermal Runaway Dynamics
+                    </h3>
+
+                    <div className="space-y-6 flex-grow">
+                        
+                        {/* PINN Equation Display */}
+                        <div className="bg-slate-800 p-4 rounded-lg text-center shadow-inner">
+                        <p className="text-slate-300 font-bold mb-1 uppercase tracking-wider text-sm">Embedded Soft Constraints</p>
+                        <p className="font-mono font-bold text-xl text-yellow-400">
+                            ℒ_tot = λ_d(ℒ_d) + λ_p(ℒ_p) + λ_b(ℒ_b)
+                        </p>
+                        <p className="font-semibold text-slate-400 text-sm mt-2">
+                            *ℒ_p incorporates thermodynamics & kinetics via auto-differentiation
+                        </p>
+                        </div>
+
+                        {/* Real-time Telemetry Grid */}
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg text-center">
+                            <Icon name="Thermometer" className={`w-8 h-8 mx-auto mb-2 ${bessTemp > 80 ? 'text-red-600 animate-pulse' : 'text-orange-500'}`} />
+                            <p className="font-bold text-slate-600">Cell Temp</p>
+                            <p className={`text-3xl font-extrabold ${bessTemp > 80 ? 'text-red-600' : 'text-slate-900'}`}>
+                            {bessTemp.toFixed(1)}°C
+                            </p>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg text-center">
+                            <Icon name="Zap" className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+                            <p className="font-bold text-slate-600">Bus Voltage</p>
+                            <p className="text-3xl font-extrabold text-slate-900">
+                            {bessVoltage.toFixed(0)}V
+                            </p>
+                        </div>
+                        </div>
+
+                        {/* Predictive Warning System */}
+                        <div className={`p-4 rounded-lg border-2 mt-4 ${timeToRunaway < 8 ? 'bg-red-100 border-red-500' : 'bg-orange-50 border-orange-400'}`}>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-bold text-lg text-slate-800">Thermal Runaway Prediction:</span>
+                            <span className={`text-2xl font-extrabold ${timeToRunaway < 8 ? 'text-red-600' : 'text-orange-600'}`}>
+                            {timeToRunaway} mins
+                            </span>
+                        </div>
+                        <div className="w-full bg-slate-300 rounded-full h-3 mb-4">
+                            <div className={`h-3 rounded-full transition-all duration-500 ${timeToRunaway < 8 ? 'bg-red-600' : 'bg-orange-500'}`} style={{ width: `${Math.max(0, (15 - timeToRunaway) / 15 * 100)}%` }}></div>
+                        </div>
+                        
+                        <button 
+                            onClick={() => setCoolingActive(!coolingActive)}
+                            className={`w-full font-bold text-lg py-3 rounded shadow transition-colors ${coolingActive ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-800 hover:bg-slate-900 text-white'}`}
+                        >
+                            {coolingActive ? 'Cooling Protocol Active (Click to Stop)' : 'Initiate Electrolyte Cooling'}
+                        </button>
+                        </div>
+
+                    </div>
+                    </section>
+
+                </div>
+                </div>
+            );
+        }
+
+        // 渲染 React 到页面的 root 节点
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
